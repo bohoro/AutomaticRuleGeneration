@@ -1,0 +1,64 @@
+---
+title: "Automatic Rule Generation Using Supervised Machine Learning"
+author: "Brian O'Horo"
+output: html_document
+---
+
+Rule based systems are a very popular approach to solving complex business problems.  Rules are flexible and allow the business system to change behavior usually without requiring a new code release.  In addition, rules based systems are typically more interpretable then other modeling approaches such as support vector machines or neural networks.  This interpretability may trump the accuracy gained by black box style machine learning approaches.
+
+Core system rules can be constructed by specialized subject matter experts with deep understanding of the business problem or they can be dynamically constructed by machine learning if historically labeled data exists.  This paper will show you how rules can be automatically created using historical data.
+
+For illustration of this approach we will use the popular Iris flower data set.  The Iris flower data set or Fisher's Iris data set is a multivariate data set introduced by Sir Ronald Fisher (1936) as an example of discriminant analysis. It is sometimes called Anderson's Iris data set because Edgar Anderson collected the data to quantify the morphologic variation of Iris flowers of three related species. Two of the three species were collected in the Gaspé Peninsula "all from the same pasture, and picked on the same day and measured at the same time by the same person with the same apparatus".  We will use this data as a proxy for a categorization problem such as the identification of fraud.
+
+
+##Exploring the Data Set 
+
+Let's take a look at the Iris data set.  The data set contains 4 predictors (named Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) and 1 output factor (Species).  Species is what our rules will attempt to categorize.  In your business problem, Species might be a category of Fraud, Risk, etc.
+
+```{r}
+data(iris)
+str(iris)
+```
+
+###Boxplot for the Iris Predictor Variables:
+
+Let's look at the box-and-whisker plot of the grouped predictor values.  A note on box-and-wisker or boxplots: in descriptive statistics, a boxplot is a convenient way of graphically depicting groups of numerical data through their quartiles. Box plots may also have lines extending vertically from the boxes (whiskers) indicating variability outside the upper and lower quartiles, hence the terms box-and-whisker plot and box-and-whisker diagram. Outliers are plotted as individual points.  This plot is produced using base graphic in R.
+
+```{r, echo=FALSE}
+# split predictors from outcome
+x <- iris[,1:4]
+y <- iris[,5]
+par(mfrow = c(2, 2), mar = c(4,2,2,2), oma = c(1, 1, 1, 1))
+for (name in colnames(x)) {
+  boxplot(x[[name]]~y , col=c(3:(length(unique(y))+2)),ylab="Outcome", xlab=name)
+}
+```
+
+### Machine Learning Component
+
+The model training in this section is based on the the R based caret package.  Caret (short for Classification And REgression Training) is a set of functions that attempt to streamline the process for creating predictive models, (see http://caret.r-forge.r-project.org/).  In addition it uses the rpart R library for Recursive Partitioning and Regression Trees.
+
+The code to train our model with the rpart2 method cross validation is as follows:
+
+```{r}
+library(rpart)
+library(caret)
+rPartMdl <- train( x, y, method = "rpart2", tuneLength = 10, trControl = trainControl( method = "cv"))
+```
+
+### Visualizing the rules
+
+Once we have the model trained we can evaluate the rules and configure the rules system based on the output.
+
+```{r}
+library( partykit)
+rulesTree <- as.party(rPartMdl$finalModel)
+plot( rulesTree)
+```
+
+Enjoy!
+
+Note full source code for this example can be found at my github account at https://github.com/bohoro/AutomaticRuleGeneration
+
+
+
